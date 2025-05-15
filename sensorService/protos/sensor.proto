@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package sensor;
+
+service SensorService {
+  rpc SendVitalData (VitalData) returns (SensorResponse);
+}
+
+message VitalData {
+  string patientId = 1;
+  int32 bpm = 2;
+  int32 tension = 3;
+}
+
+message SensorResponse {
+  string status = 1;
+}

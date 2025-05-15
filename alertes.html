@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Alertes Médicales</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #f4f6f8;
+    }
+
+    header {
+      background-color: #4285f4;
+      color: white;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.8em;
+      flex: 1;
+      text-align: center;
+    }
+
+    header nav a {
+      color: white;
+      font-weight: bold;
+      text-decoration: none;
+      margin-right: 20px;
+    }
+
+    header nav {
+      display: flex;
+      align-items: center;
+    }
+
+    .btn-logout {
+      background-color: #e74c3c;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 5px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .content {
+      display: flex;
+      justify-content: center;
+      margin-top: 40px;
+    }
+
+    table {
+      width: 90%;
+      max-width: 1100px;
+      border-collapse: collapse;
+      background-color: white;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 14px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+
+    th {
+      background-color: #4285f4;
+      color: white;
+    }
+
+    .timestamp {
+      font-size: 0.9em;
+      color: #555;
+    }
+
+    .critical {
+      background-color: #ffe6e6;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a href="patients.html">Patients</a>
+    <a href="dashboard.html">Dashboard</a>
+  </nav>
+  <h1>Alertes Médicales</h1>
+  <button class="btn-logout" onclick="logout()">Se déconnecter</button>
+</header>
+
+<div class="content">
+  <table id="alertTable">
+    <thead>
+      <tr>
+        <th>Patient</th>
+        <th>BPM</th>
+        <th>Tension</th>
+        <th>Message</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script>
+  async function fetchAlerts() {
+    const query = {
+      query: `
+        {
+          alerts {
+            patientId
+            bpm
+            tension
+            message
+            timestamp
+          }
+        }
+      `
+    };
+
+    const response = await fetch("http://localhost:4000/graphql", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(query)
+    });
+
+    const result = await response.json();
+    const alerts = result.data.alerts;
+    const tbody = document.querySelector("#alertTable tbody");
+    tbody.innerHTML = "";
+
+    alerts.forEach(alert => {
+      const isCritical = alert.bpm > 120 || alert.tension > 140;
+      const row = `
+        <tr${isCritical ? ' class="critical"' : ''}>
+          <td>${alert.patientId}</td>
+          <td>${alert.bpm}</td>
+          <td>${alert.tension}</td>
+          <td>${alert.message}</td>
+          <td class="timestamp">${new Date(alert.timestamp).toLocaleString()}</td>
+        </tr>`;
+      tbody.innerHTML += row;
+    });
+  }
+
+  function logout() {
+    window.location.href = "http://localhost:8180/realms/medical-system/protocol/openid-connect/logout?redirect_uri=http://localhost:4000/alerts";
+  }
+
+  fetchAlerts();
+  setInterval(fetchAlerts, 5000);
+</script>
+
+</body>
+</html>

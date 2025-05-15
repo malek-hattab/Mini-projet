@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Médical</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body {
+      background-color: #f4f6fa;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .header {
+      background-color: #4285f4;
+      padding: 20px 40px;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 4px solid #3070d0;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 2rem;
+      flex: 1;
+      text-align: center;
+    }
+    .nav-links {
+      display: flex;
+      gap: 15px;
+    }
+    .nav-links a {
+      color: white;
+      font-weight: 600;
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 5px;
+      transition: background-color 0.2s;
+    }
+    .nav-links a:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      max-width: 1100px;
+      margin: 50px auto;
+      padding: 0 20px;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    .card i {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      color: #4285f4;
+    }
+    .card h2 {
+      margin: 0;
+      font-size: 1.2em;
+      color: #333;
+      text-align: center;
+    }
+    .footer-links {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .footer-links a {
+      margin: 10px;
+      text-decoration: none;
+      font-weight: bold;
+      color: #4285f4;
+    }
+    .footer-links a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="nav-links">
+      <a href="alertes.html">Alertes</a>
+      <a href="patients.html"> Patients</a>
+    </div>
+    <h1>Dashboard Médical</h1>
+    <div class="nav-links justify-content-end">
+      <a class="btn btn-sm btn-danger" href="http://localhost:8180/realms/medical-system/protocol/openid-connect/logout?redirect_uri=http://localhost:4000/alerts">Se déconnecter</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <i class="fa-solid fa-user-injured"></i>
+      <h2 id="totalPatients">Patients : ...</h2>
+    </div>
+    <div class="card">
+      <i class="fa-solid fa-heart-pulse"></i>
+      <h2 id="totalAlerts">Alertes : ...</h2>
+    </div>
+    <div class="card">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <h2 id="criticalAlerts">Alertes Critiques : ...</h2>
+    </div>
+    <div class="card">
+      <i class="fa-solid fa-clock"></i>
+      <h2 id="lastAlert">Dernière Alerte : ...</h2>
+    </div>
+  </div>
+
+  <div class="footer-links">
+    <a href="alertes.html">Voir les alertes</a> | 
+    <a href="patients.html">Voir les patients</a>
+  </div>
+
+  <script>
+    async function updateDashboard() {
+      try {
+        // Patients
+        const patientRes = await fetch("http://localhost:3001/patients");
+        const patients = await patientRes.json();
+        document.getElementById('totalPatients').innerText = "Patients : " + patients.length;
+
+        // Alertes via GraphQL
+        const query = {
+          query: `
+            {
+              alerts {
+                patientId
+                bpm
+                tension
+                timestamp
+              }
+            }
+          `
+        };
+        const alertRes = await fetch("http://localhost:4000/graphql", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(query)
+        });
+        const alertData = await alertRes.json();
+        const alerts = alertData.data.alerts;
+
+        document.getElementById('totalAlerts').innerText = "Alertes : " + alerts.length;
+
+        const critical = alerts.filter(a => a.bpm > 120 || a.tension > 140);
+        document.getElementById('criticalAlerts').innerText = "Alertes Critiques : " + critical.length;
+
+        if (alerts.length > 0 && alerts[alerts.length - 1].timestamp) {
+          const last = alerts[alerts.length - 1];
+          const date = new Date(last.timestamp).toLocaleString();
+          document.getElementById('lastAlert').innerText =
+            `Dernière Alerte : Patient ${last.patientId} à ${date}`;
+        } else {
+          document.getElementById('lastAlert').innerText = "Dernière Alerte : aucune";
+        }
+      } catch (err) {
+        console.error("Erreur dashboard:", err);
+      }
+    }
+
+    updateDashboard();
+    setInterval(updateDashboard, 5000);
+  </script>
+
+</body>
+</html>
