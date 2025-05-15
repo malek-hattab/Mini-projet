@@ -69,7 +69,7 @@ Ce projet propose une architecture distribuée pour la **gestion des alertes mé
 - **Realm :** `medical-system`
 - **Client :** `gateway-client`
 - **Type :** confidentiel (JWT)
-- **Utilisateur test :** `malek / ahmed123`
+- **Utilisateur test :** `malek / malek123`
 - **Protège :** `/alerts` (REST) et `/graphql`
 
 ---
